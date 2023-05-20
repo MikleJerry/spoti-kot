@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:columnCount="1"
+        android:rowCount="3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ListView
+            android:id="@+id/songsListView"
+            android:layout_width="wrap_content"
+            android:layout_height="440dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+        </ListView>
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/songImage"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:src="@drawable/file_earmark_music"
+                android:contentDescription="@string/song_image_content_description"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/songTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="35dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textAlignment="center"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"
+                    android:text=""
+                    android:textSize="25sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/songPassedTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0:00"
+                    app:layout_constraintEnd_toStartOf="@id/songSeekBar"
+                    app:layout_constraintTop_toTopOf="@id/songSeekBar" />
+
+                <SeekBar
+                    android:id="@+id/songSeekBar"
+                    android:layout_width="300dp"
+                    android:layout_height="20dp"
+                    android:progressBackgroundTint="@color/green"
+                    android:thumbTint="@color/gray"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/songRemainingTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-0:00"
+                    app:layout_constraintStart_toEndOf="@id/songSeekBar"
+                    app:layout_constraintTop_toTopOf="@id/songSeekBar" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/previousSong"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:background="@drawable/caret_left_fill"
+                app:layout_constraintEnd_toStartOf="@+id/playPauseButton"
+                app:layout_constraintTop_toTopOf="@+id/playPauseButton"
+                tools:ignore="SpeakableTextPresentCheck" />
+
+            <Button
+                android:id="@+id/playPauseButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:background="@drawable/baseline_play_circle_filled_24"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="SpeakableTextPresentCheck"
+                android:backgroundTint="@color/green"/>
+
+
+            <Button
+                android:id="@+id/nextSong"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:background="@drawable/caret_right_fill"
+                app:layout_constraintStart_toEndOf="@+id/playPauseButton"
+                app:layout_constraintTop_toTopOf="@+id/playPauseButton"
+                tools:ignore="SpeakableTextPresentCheck" />
+
+            <Button
+                android:id="@+id/addSongButton"
+                android:background="@drawable/plus_circle_fill"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="SpeakableTextPresentCheck"/>
+
+        </LinearLayout>
+
+    </GridLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
