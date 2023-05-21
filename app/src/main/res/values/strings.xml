@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">SpotiKot</string>
     <string name="song_image_content_description">Song image</string>
+    <string name="song_title">%1$s - %2$s</string>
+    <string name="song_remaining_time">-%1$s</string>
+    <string name="song_passed_time">%1$s</string>
 </resources>

@@ -1,8 +1,6 @@
 package com.example.bestapp
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
@@ -17,47 +15,54 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.ViewModelProvider
 import com.example.bestapp.databinding.ActivityMainBinding
 
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var binding: ActivityMainBinding
-	lateinit var mediaPlayer: MediaPlayer
-	val metaRetriever: MediaMetadataRetriever = MediaMetadataRetriever()
-	var songsUri: ArrayList<Uri> = arrayListOf()
-	var currentSongIndex: Int = 0
-	var songTitle: String? = null
-	var artist: String? = null
-	lateinit var songBitmapImage: Bitmap
-	lateinit var arrayAdapter: ArrayAdapter<*>
-	var songsNames: ArrayList<String> = arrayListOf()
+	// TODO: Реализовать функцию добавления песен в хранилище, чтобы при выходе из приложения сохранялся список песен
+	private lateinit var viewModel: MainViewModel
+	private lateinit var dataStoreManager: DataStoreManager
+	private lateinit var mediaPlayer: MediaPlayer
+	private val metaRetriever: MediaMetadataRetriever = MediaMetadataRetriever()
+
+	private var songsUri: ArrayList<Uri> = arrayListOf()
+	private var currentSongIndex: Int = 0
+	private var songTitle: String? = null
+	private var artist: String? = null
+	private lateinit var songBitmapImage: Bitmap
+	private lateinit var arrayAdapter: ArrayAdapter<*>
+	private var songsNames: ArrayList<String> = arrayListOf()
 
 	// Инициализация launcher
 	private val getSongLauncher =
-		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-			if (result.resultCode == Activity.RESULT_OK) {
-				val uri: Uri = result.data!!.data!!
-
-				// Добавляем URI песни в массив
-				// и название песни в ListView
-				songsUri.add(uri)
-				songsNames.add(uri.getName(applicationContext))
-
-				// Загружаем песню в массив
-				arrayAdapter = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, songsNames)
-				binding.songsListView.adapter = arrayAdapter
+		registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+			if (uri != null) {
+				addSong(uri)
 			}
 		}
 
+	private fun addSong(uri: Uri) {
+		songsUri.add(uri)
+		songsNames.add(uri.getName(applicationContext))
+
+		// Помещаем данные в DataStore
+		viewModel.setSongs(songsNames)
+
+		// Загружаем песню в массив
+		arrayAdapter = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, songsNames)
+		binding.songsListView.adapter = arrayAdapter
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		binding = ActivityMainBinding.inflate(layoutInflater)
 		setContentView(binding.root)
+		viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+		dataStoreManager = DataStoreManager(this)
 
-		// Заставляет текст двигаться по горизонтали,
-		// если не помещается на экране
-		binding.songTitle.isSelected = true
+		checkSongUri()
 
 		// Инициализация MediaPlayer
 		mediaPlayer = MediaPlayer().apply {
@@ -69,69 +74,84 @@ class MainActivity : AppCompatActivity() {
 			)
 		}
 
-		// Добавление песни
-		binding.addSongButton.setOnClickListener {
-			val intent: Intent = Intent(Intent.ACTION_GET_CONTENT)
-			intent.type = "*/*"
-			intent.addCategory(Intent.CATEGORY_OPENABLE)
-			getSongLauncher.launch(intent)
-		}
+		binding.apply {
+			songTitle.text = ""
+			// Показывает оставшееся и пройденное время песни
+			songPassedTime.text = getString(R.string.song_passed_time, "0:00")
+			songRemainingTime.text = getString(R.string.song_remaining_time, "0:00")
 
-		binding.songsListView.setOnItemClickListener { parent, view, position, id ->
-			currentSongIndex = position
-			setSong()
-		}
+			// Заставляет текст двигаться по горизонтали,
+			// если не помещается на экране
+			songTitle.isSelected = true
 
-		// Воспроизведение и пауза песни
-		binding.playPauseButton.setOnClickListener {
-			if (mediaPlayer.isPlaying)
-			{
-				mediaPlayer.pause()
-				binding.playPauseButton.setBackgroundResource(R.drawable.baseline_play_circle_filled_24)
-			}
-			else {
-				mediaPlayer.start()
-				binding.playPauseButton.setBackgroundResource(R.drawable.baseline_pause_circle_filled_24)
-			}
-		}
+			// Добавление песни
+			addSongButton.setOnClickListener {getSongLauncher.launch(arrayOf("*/*"))}
 
-		// Переход к предыдущей песни
-		binding.previousSong.setOnClickListener {
-			mediaPlayer.stop()
-			if (currentSongIndex == 0) {
-				currentSongIndex = songsUri.size - 1
+			songsListView.setOnItemClickListener { parent, view, position, id ->
+				currentSongIndex = position
+				setSong()
 			}
-			else {
-				currentSongIndex--
-			}
-			mediaPlayer.reset()
-			setSong()
-		}
 
-		// Переход к следующей песни
-		binding.nextSong.setOnClickListener {
-			mediaPlayer.stop()
-			if (currentSongIndex == songsUri.size - 1) {
-				currentSongIndex = 0
-			}
-			else {
-				currentSongIndex++
-			}
-			mediaPlayer.reset()
-			setSong()
-		}
-
-		binding.songSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
-			override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-				if (fromUser) {
-					mediaPlayer.seekTo(progress)
+			// Воспроизведение и пауза песни
+			playPauseButton.setOnClickListener {
+				if (mediaPlayer.isPlaying)
+				{
+					mediaPlayer.pause()
+					binding.playPauseButton.setBackgroundResource(R.drawable.baseline_play_circle_filled_24)
+				}
+				else {
+					mediaPlayer.start()
+					binding.playPauseButton.setBackgroundResource(R.drawable.baseline_pause_circle_filled_24)
 				}
 			}
-			override fun onStartTrackingTouch(seekBar: SeekBar?) {
+
+			// Переход к предыдущей песни
+			previousSong.setOnClickListener {
+				mediaPlayer.stop()
+				if (currentSongIndex == 0) {
+					currentSongIndex = songsUri.size - 1
+				}
+				else {
+					currentSongIndex--
+				}
+				mediaPlayer.reset()
+				setSong()
 			}
-			override fun onStopTrackingTouch(seekBar: SeekBar?) {
+
+			// Переход к следующей песни
+			nextSong.setOnClickListener {
+				mediaPlayer.stop()
+				if (currentSongIndex == songsUri.size - 1) {
+					currentSongIndex = 0
+				}
+				else {
+					currentSongIndex++
+				}
+				mediaPlayer.reset()
+				setSong()
 			}
-		})
+
+			songSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
+				override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+					if (fromUser) {
+						mediaPlayer.seekTo(progress)
+					}
+				}
+				override fun onStartTrackingTouch(seekBar: SeekBar?) {
+				}
+				override fun onStopTrackingTouch(seekBar: SeekBar?) {
+				}
+			})
+		}
+	}
+
+	private fun checkSongUri() {
+		// Получение данных из DataStore
+		binding.apply {
+			viewModel.getSongs.observe(this@MainActivity) {song ->
+				Toast.makeText(applicationContext, song, Toast.LENGTH_SHORT).show()
+			}
+		}
 	}
 
 	// Получает полное имя файла (песни)
@@ -153,17 +173,18 @@ class MainActivity : AppCompatActivity() {
 			override fun run() {
 				try {
 					val currentSongPosition: Int = mediaPlayer.currentPosition
-					binding.songSeekBar.progress = currentSongPosition
-
 					val passedTime: Long = currentSongPosition.toLong()
-					binding.songPassedTime.text = milliSecondsToTime(passedTime)
-
 					val remainingTime: Long = mediaPlayer.duration.toLong() - passedTime
-					binding.songRemainingTime.text = "-${milliSecondsToTime(remainingTime)}"
+
+					binding.apply {
+						songSeekBar.progress = currentSongPosition
+						songPassedTime.text = getString(R.string.song_passed_time, milliSecondsToTime(passedTime))
+						songRemainingTime.text = getString(R.string.song_remaining_time, milliSecondsToTime(remainingTime))
+					}
 
 					// Переход к следующей песни
 					// если текущая закончилась
-					if (remainingTime.toInt() / 1000 < 0.5) {
+					if (remainingTime.toInt() / 1000 < 0.2) {
 						mediaPlayer.stop()
 						if (currentSongIndex == songsUri.size - 1) {
 							currentSongIndex = 0
@@ -184,8 +205,8 @@ class MainActivity : AppCompatActivity() {
 
 	// Переводит миллисекунды в формат времени
 	private fun milliSecondsToTime(milliSeconds: Long): String {
-		var time: String = ""
-		var secondsString: String = ""
+		var time = ""
+		var secondsString = ""
 
 		val hours: Int = (milliSeconds / (1000 * 60 * 60)).toInt()
 		val minutes: Int = (milliSeconds % (1000 * 60 * 60) / (1000 * 60)).toInt()
@@ -194,11 +215,11 @@ class MainActivity : AppCompatActivity() {
 		if (hours > 0) {
 			time = "${hours}:"
 		}
-		if (seconds < 10) {
-			secondsString = "0$seconds"
-		}
-		else {
-			secondsString = "$seconds"
+
+		secondsString = if (seconds < 10) {
+			"0$seconds"
+		} else {
+			"$seconds"
 		}
 		time = "${time}${minutes}:${secondsString}"
 
@@ -216,7 +237,7 @@ class MainActivity : AppCompatActivity() {
 		metaRetriever.setDataSource(applicationContext, songsUri[currentSongIndex])
 		artist = metaRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
 		songTitle = metaRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-		binding.songTitle.text = "${artist} - ${songTitle}"
+		binding.songTitle.text = getString(R.string.song_title, artist, songTitle)
 
 		// Получение картинки песни
 		val songRawImage: ByteArray? = metaRetriever.embeddedPicture
